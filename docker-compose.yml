@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: drus_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: drus_aleksa
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data # pathOnMyPc:pathInContainer
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # initializes db with needed tables
+    restart: always
+
+volumes:
+  pgdata:

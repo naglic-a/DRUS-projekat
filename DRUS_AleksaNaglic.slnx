@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="docker-compose.yml" />
+    <File Path="init.sql" />
+  </Folder>
+  <Project Path="SensorApp/SensorApp.csproj" />
+  <Project Path="ServerApp/ServerApp.csproj" />
+  <Project Path="SharedUtils/SharedUtils.csproj" />
+</Solution>

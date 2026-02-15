@@ -1,0 +1,16 @@
+# --- C# / .NET Defaults ---
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+*.suo
+*.userprefs
+
+# --- Docker & Environment ---
+.env                
+docker-compose.override.yml
+pgdata/             
+
+# --- OS Junk ---
+.DS_Store
+Thumbs.db
