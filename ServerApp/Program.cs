@@ -4,20 +4,35 @@ using SharedUtils.DTOs;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
+using Serilog;
 
 namespace ServerApp;
 
 class Program {
     static async Task Main(string[] args) {
-        int port = 8080;
-        TcpListener listener = new TcpListener(IPAddress.Any, port);
-        listener.Start();
-        Console.WriteLine($"Listening on port {port}...");
-    
-        while(true) {
-            TcpClient client = await listener.AcceptTcpClientAsync();
+        // Configure Serilog
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .WriteTo.File("logs/server-.txt", 
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
 
-            _ = HandleClientAsync(client);
+        try {
+            int port = 8080;
+            TcpListener listener = new TcpListener(IPAddress.Any, port);
+            listener.Start();
+            Log.Information("Server listening on port {Port}", port);
+        
+            while(true) {
+                TcpClient client = await listener.AcceptTcpClientAsync();
+                Log.Information("Client connected from {RemoteEndPoint}", client.Client.RemoteEndPoint);
+
+                _ = HandleClientAsync(client);
+            }
+        } finally {
+            Log.CloseAndFlush();
         }
     }
 
@@ -31,7 +46,7 @@ class Program {
         await using(var dbConnection = new NpgsqlConnection(connectionString)) { // this opens one connection for each client(even if the client doesnt use it all the time). Better solution would be ipmlementing connection poolling TODO
             try {
                 await dbConnection.OpenAsync();
-                Console.WriteLine($"Connected to database for client {client.Client.RemoteEndPoint}");
+                Log.Debug("Database connection opened for client {RemoteEndPoint}", client.Client.RemoteEndPoint);
 
                 byte[] serverSharedSecret;
 
@@ -39,7 +54,7 @@ class Program {
                 var request = JsonSerializer.Deserialize<HandshakeRequestDto>(handshakeLine!);
 
                 if(request == null || request.PublicKey == null) {
-                    Console.WriteLine("Error: Invalid handshake...");
+                    Log.Error("Invalid handshake received from client");
                     return;
                 }
 
@@ -53,7 +68,7 @@ class Program {
                     await writer.WriteLineAsync(JsonSerializer.Serialize(response));
 
                     string secretPreview = BitConverter.ToString(serverSharedSecret).Substring(0, 14);
-                    Console.WriteLine($"Handshake was  succsessfull! Sensor {request.SensorId} connected. Secret starts with: {secretPreview}...");
+                    Log.Information("Handshake successful with sensor {SensorId}, secret starts with: {SecretPreview}", request.SensorId, secretPreview);
                 }
 
                 string? encryptedLine;
@@ -64,7 +79,7 @@ class Program {
                         var reading = JsonSerializer.Deserialize<SensorReadingDto>(decryptedJson);
 
                         if(reading != null) {
-                            Console.WriteLine($"Received reading: {reading.SensorId}, Temp: {reading.Value} C");
+                            Log.Information("Received reading from {SensorId}: Temperature {Value}°C", reading.SensorId, reading.Value);
                             string sql = @"
                             INSERT INTO drus_log (var_id, val, created_at)
                             SELECT id, @val, TO_TIMESTAMP(@ts)
@@ -79,9 +94,9 @@ class Program {
                                 int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
                                 if(rowsAffected == 0) {
-                                    Console.WriteLine($"Error... Could not save log...");
+                                    Log.Warning("Could not save log for sensor {SensorId} - variable not found in database", reading.SensorId);
                                 } else {
-                                    Console.WriteLine($"Log saved to DB.");
+                                    Log.Debug("Log saved to database for sensor {SensorId}", reading.SensorId);
                                 }
                             }
                             /*
@@ -104,18 +119,18 @@ class Program {
                                 int alarmrsTriggered = await alarmCmd.ExecuteNonQueryAsync();
 
                                 if(alarmrsTriggered > 0) {
-                                    Console.WriteLine($" Alarm triggered for sensor {reading.SensorId} having value: {reading.Value}");
+                                    Log.Warning("ALARM TRIGGERED for sensor {SensorId} with value {Value}°C", reading.SensorId, reading.Value);
                                 }
                             }
                         }
                     } catch(Exception ex) {
-                        Console.WriteLine($"ERROR WHILE READING/DECRYPTING.... {ex.Message}");
+                        Log.Error(ex, "Error while reading/decrypting message from client");
                     }
                 }
             } catch(Exception ex) {
-                Console.WriteLine($"Connection lost: {ex.Message}");
+                Log.Error(ex, "Connection lost with client {RemoteEndPoint}", client.Client.RemoteEndPoint);
             }
         }
-        Console.WriteLine("Sensore disconnected...");
+        Log.Information("Sensor disconnected");
     }
 }

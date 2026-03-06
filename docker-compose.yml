@@ -20,11 +20,13 @@ services:
     container_name: drus_primary_server
     ports:
       - "8080:8080"
+    volumes:
+      - ./logs/server:/app/logs  # Server logs
     depends_on:
       - db
     restart: always
 
-  sensore-1:
+  sensor-1:
     build:
       context: .
       dockerfile: Sensor.Dockerfile
@@ -32,9 +34,24 @@ services:
     environment:
       - SERVER_HOST=primary
       - SENSOR_ID=01
+    volumes:
+      - ./logs/sensor-1:/app/logs  # Sensor 1 logs
     depends_on:
       - primary
     restart: always
 
+  sensor-2:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_2
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=02
+    volumes:
+      - ./logs/sensor-2:/app/logs
+    depends_on:
+      - primary
+    restart: always
 volumes:
   pgdata:
