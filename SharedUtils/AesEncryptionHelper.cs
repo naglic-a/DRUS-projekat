@@ -21,7 +21,7 @@ public static class AesEncryptionHelper {
 
         using var encryptor = aes.CreateEncryptor();
         byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
-        byte[] encryptedBytes = encryptor.TransformFinalBlock(plainBytes);
+        byte[] encryptedBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
 
         byte[] result = new byte[aes.IV.Length + encryptedBytes.Length];
         Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);

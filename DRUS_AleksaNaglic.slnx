@@ -1,8 +1,8 @@
 <Solution>
   <Folder Name="/Solution Items/">
-    <File Path="Client.Dockerfile" />
     <File Path="docker-compose.yml" />
     <File Path="init.sql" />
+    <File Path="Sensor.Dockerfile" />
     <File Path="Server.Dockerfile" />
   </Folder>
   <Project Path="SensorApp/SensorApp.csproj" />

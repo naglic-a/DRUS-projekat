@@ -81,7 +81,7 @@ class Program {
                         if(reading != null) {
                             Log.Information("Received reading from {SensorId}: Temperature {Value}°C", reading.SensorId, reading.Value);
                             string sql = @"
-                            INSERT INTO drus_log (var_id, val, created_at)
+                            INSERT INTO drus_log (var_id, var_value, log_timestamp)
                             SELECT id, @val, TO_TIMESTAMP(@ts)
                             FROM drus_variables
                             WHERE name = @sensorName;";
@@ -104,14 +104,14 @@ class Program {
                             Keeping this would make this server "stateless", which means there is nothing to care about when primary server crashes and 2ndary takes over since everything is taken care of in database(lower performance the higher the scale)
                              */
                             string alarmSqll = @"
-                            INSERT INTO drus_alarms(var_id, alarm_type, severity, triggered_val, message)
-                            SELECT id,
+                                INSERT INTO drus_alarm(var_id, alarm_type, alarm_severity, triggered_value, message)
+                                SELECT id,
                                 CASE WHEN @val > max_safe_value THEN 'HIGH_LIMIT' ELSE 'LOW_LIMIT' END,
-                                'CRITICAL',
-                                @val,
-                                'Alarm! Sensor ' || @sensorName || ' has value: ' || @val || ' which is outside safe limits.'
-                            FROM drus_variables
-                            WHERE name = @sensorName AND (@val > max_safe_value OR @val < min_safe_value);";
+                                    'CRITICAL',
+                                    @val,
+                                    'Alarm! Sensor ' || @sensorName || ' has value: ' || @val || ' which is outside safe limits.'
+                                FROM drus_variables
+                                WHERE name = @sensorName AND (@val > max_safe_value OR @val < min_safe_value);";
                             await using(var alarmCmd = new NpgsqlCommand(alarmSqll, dbConnection)) {
                                 alarmCmd.Parameters.AddWithValue("val", reading.Value);
                                 alarmCmd.Parameters.AddWithValue("sensorName", reading.SensorId);

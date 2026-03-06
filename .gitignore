@@ -5,6 +5,7 @@
 *.user
 *.suo
 *.userprefs
+*.txt
 
 # --- Docker & Environment ---
 .env                
