@@ -12,7 +12,8 @@ create table if not exists drus_log (
 	var_id INTEGER not null,
 	var_value DECIMAL(10,2) not null,
 	log_timestamp TIMESTAMP default CURRENT_TIMESTAMP,
-	
+	log_quality VARCHAR(20) default 'GOOD',
+
 	constraint fk_variable_log
 		foreign key(var_id)
 		references drus_variables(id)

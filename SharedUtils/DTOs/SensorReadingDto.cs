@@ -15,5 +15,14 @@ namespace SharedUtils.DTOs {
         public long Timestamp { get; set; } 
 
         public bool IsHeartbeat { get; set; } = false;
+
+        [JsonPropertyName("mid")]
+        public long MessageId { get; set; }
+
+        [JsonPropertyName("q")]
+        public string Quality { get; set; } = "GOOD"; // GOOD, UNCERTAIN, BAD
+
+        [JsonPropertyName("sig")]
+        public string Signature { get; set; } = string.Empty;
     }
 }

@@ -35,6 +35,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=01
       - START_ACTIVE=true
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-1:/app/logs  # Sensor 1 logs
     depends_on:
@@ -50,6 +52,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=02
       - START_ACTIVE=true
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-2:/app/logs
     depends_on:
@@ -65,6 +69,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=03
       - START_ACTIVE=true
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-3:/app/logs
     depends_on:
@@ -80,6 +86,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=04
       - START_ACTIVE=true
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-4:/app/logs
     depends_on:
@@ -95,6 +103,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=05
       - START_ACTIVE=false
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-5:/app/logs
     depends_on:
@@ -110,6 +120,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=06
       - START_ACTIVE=false
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-6:/app/logs
     depends_on:
@@ -125,6 +137,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=07
       - START_ACTIVE=false
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-7:/app/logs
     depends_on:
@@ -140,6 +154,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=08
       - START_ACTIVE=false
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-8:/app/logs
     depends_on:
@@ -155,6 +171,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=09
       - START_ACTIVE=true
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-9:/app/logs
     depends_on:
@@ -170,6 +188,8 @@ services:
       - SERVER_HOST=primary
       - SENSOR_ID=10
       - START_ACTIVE=true
+    stdin_open: true
+    tty: true
     volumes:
       - ./logs/sensor-10:/app/logs
     depends_on:

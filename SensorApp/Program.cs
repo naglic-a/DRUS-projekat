@@ -58,6 +58,36 @@ class Program {
                 Log.Warning("Handshake successful! Shared secret starts with: {SecretPreview} (DO NOT LOG IN PRODUCTION!)", secretPreview);
             }
 
+            bool isSleeping = false;
+            bool demoTampering = false;
+            bool demoReplay = false;
+
+            // Console command listener
+            _ = Task.Run(() =>
+            {
+                while(true) {
+                    string? cmd = Console.ReadLine();
+                    if(cmd == null)
+                        continue;
+
+                    cmd = cmd.Trim().ToLower();
+
+                    if(cmd == "sleep") {
+                        Log.Warning("[DEMO] Freezing sensor for 50 seconds...");
+                        isSleeping = true;
+                        Thread.Sleep(50000);
+                        isSleeping = false;
+                        Log.Warning("[DEMO] Sensor waking!");
+                    } else if(cmd == "tamper") {
+                        demoTampering = !demoTampering; // Toggles it on/off
+                        Log.Warning($"[DEMO] Tampering mode is now: {demoTampering}");
+                    } else if(cmd == "replay") {
+                        demoReplay = !demoReplay; // Toggles it on/off
+                        Log.Warning($"[DEMO] Replay mode is now: {demoReplay}");
+                    }
+                }
+            });
+            // Server Command listener
             _ = Task.Run(async () => { 
                 while(true) {
                     try {
@@ -81,9 +111,13 @@ class Program {
             Random rand = new Random();
 
             SemaphoreSlim networkLock = new SemaphoreSlim(1, 1);
+            // Heartbeat Task
             _ = Task.Run(async () => { 
                 while(true) {
                     await Task.Delay(10000);
+
+                    if(isSleeping)
+                        continue;
 
                     var heartbeat = new SensorReadingDto {
                         SensorId = mySensorId,
@@ -105,17 +139,37 @@ class Program {
             });
 
             while(true) {
-                if(!isMySensorActive) {
+                if(!isMySensorActive || isSleeping) {
                     await Task.Delay(1000);
                     continue;
                 }
 
+                int qualityRand = rand.Next(100);
+                string quality = qualityRand > 20 ? "GOOD" : (qualityRand > 10 ? "UNCERTAIN" : "BAD");
                 var reading = new SensorReadingDto {
                     SensorId = mySensorId,
                     Value = (decimal)(rand.NextDouble() * (85.9 - 20.0) + 20.0),
                     Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                    IsHeartbeat = false
+                    IsHeartbeat = false,
+                    MessageId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    Quality = quality
                 };
+
+                if(demoReplay) {
+                    // 2. DEMONSTRATE REPLAY: Hardcode an old ID.
+                    reading.MessageId = 10;
+                }
+
+                string payloadToSign = $"{reading.MessageId}-{reading.SensorId}-{reading.Value}-{reading.Timestamp}";
+                using(var hmac = new System.Security.Cryptography.HMACSHA256(mySharedSecret)) {
+                    byte[] hash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(payloadToSign));
+                    reading.Signature = Convert.ToBase64String(hash);
+                }
+
+                if(demoTampering) {
+                    // DEMONSTRATE TAMPERING: Change the temperature AFTER the signature was generated.
+                    reading.Value = 999.0m;
+                }
 
                 string jsonMessage = JsonSerializer.Serialize(reading);
                 string encryptedMessage = AesEncryptionHelper.Encrypt(jsonMessage, mySharedSecret);
