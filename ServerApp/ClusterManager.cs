@@ -12,7 +12,7 @@ public class ClusterManager {
     private readonly ConcurrentDictionary<string, DateTime> m_lastSeen = new();
     private readonly ConcurrentDictionary<string, bool> m_isActive = new();
     private readonly ConcurrentDictionary<string, string> m_pendingCommands = new();
-
+    private readonly ConcurrentDictionary<string, long> m_lastMessageIds = new();
     public void StartWatchdog() {
         _ = Task.Run(async () => {
             while(true) {
@@ -31,7 +31,7 @@ public class ClusterManager {
                             var standbySensor = m_isActive.FirstOrDefault(x => x.Value == false).Key;
                             if(standbySensor != null) {
                                 Log.Information("Promoting Standby sensor with id {SensorId} to ACTIVE!!!", standbySensor);
-                                m_pendingCommands[standbySensor] = "BECOME_ACIVE";
+                                m_pendingCommands[standbySensor] = "BECOME_ACTIVE";
                                 m_isActive[standbySensor] = true;
                             }
                         }
@@ -58,5 +58,16 @@ public class ClusterManager {
 
     public bool IsZombie(string sensorId, bool isHeartbeatMessage) {
         return !isHeartbeatMessage && m_isActive.TryGetValue(sensorId, out bool active) && !active;
+    }
+
+    public bool ValidateMessageId(string sensorId, long incomingMessageId) {
+        long lastId = m_lastMessageIds.GetOrAdd(sensorId, 0);
+
+        if(incomingMessageId <= lastId) {
+            return false;
+        }
+
+        m_lastMessageIds[sensorId] = incomingMessageId;
+        return true;
     }
 }

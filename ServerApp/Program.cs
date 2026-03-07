@@ -83,6 +83,25 @@ class Program {
                         var reading = JsonSerializer.Deserialize<SensorReadingDto>(decryptedJson);
 
                         if(reading != null) {
+                            if(!reading.IsHeartbeat) {
+                                string expectedPayload = $"{reading.MessageId}-{reading.SensorId}-{reading.Value}-{reading.Timestamp}";
+                                using(var hmac = new System.Security.Cryptography.HMACSHA256(serverSharedSecret)) {
+                                    byte[] hash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(expectedPayload));
+                                    string expectedSignature = Convert.ToBase64String(hash);
+
+                                    if(reading.Signature != expectedSignature) {
+                                        Log.Warning("Invalid signature from Sensor {SensorId}. Tampering detected! Dropping message.", reading.SensorId);
+                                        continue; 
+                                    }
+                                }
+
+                            
+                                if(!m_clusterManager.ValidateMessageId(reading.SensorId, reading.MessageId)) {
+                                    Log.Warning("Fabrication detected for {SensorId}. Message ID {MessageId} is too old. Dropping message.", reading.SensorId, reading.MessageId);
+                                    continue;
+                                }
+                            }
+
                             m_clusterManager.RecordHeartbeat(reading.SensorId, reading.IsHeartbeat);
                             string? command = m_clusterManager.GetPendingCommand(reading.SensorId);
                             if(command != null) {
@@ -101,8 +120,8 @@ class Program {
 
                             Log.Information("Received reading from {SensorId}: Temperature {Value}°C", reading.SensorId, reading.Value);
                             string sql = @"
-                            INSERT INTO drus_log (var_id, var_value, log_timestamp)
-                            SELECT id, @val, TO_TIMESTAMP(@ts)
+                            INSERT INTO drus_log (var_id, var_value, log_timestamp, log_quality)
+                            SELECT id, @val, TO_TIMESTAMP(@ts), @q
                             FROM drus_variables
                             WHERE name = @sensorName;";
 
@@ -110,6 +129,7 @@ class Program {
                                 cmd.Parameters.AddWithValue("val", reading.Value);
                                 cmd.Parameters.AddWithValue("ts", reading.Timestamp);
                                 cmd.Parameters.AddWithValue("sensorName", reading.SensorId);
+                                cmd.Parameters.AddWithValue("q", reading.Quality);
 
                                 int rowsAffected = await cmd.ExecuteNonQueryAsync();
 
