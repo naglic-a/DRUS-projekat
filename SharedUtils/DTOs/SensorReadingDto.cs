@@ -13,5 +13,7 @@ namespace SharedUtils.DTOs {
 
         [JsonPropertyName("ts")]
         public long Timestamp { get; set; } 
+
+        public bool IsHeartbeat { get; set; } = false;
     }
 }

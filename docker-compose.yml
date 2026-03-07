@@ -34,6 +34,7 @@ services:
     environment:
       - SERVER_HOST=primary
       - SENSOR_ID=01
+      - START_ACTIVE=true
     volumes:
       - ./logs/sensor-1:/app/logs  # Sensor 1 logs
     depends_on:
@@ -48,8 +49,129 @@ services:
     environment:
       - SERVER_HOST=primary
       - SENSOR_ID=02
+      - START_ACTIVE=true
     volumes:
       - ./logs/sensor-2:/app/logs
+    depends_on:
+      - primary
+    restart: always
+
+  sensor-3:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_3
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=03
+      - START_ACTIVE=true
+    volumes:
+      - ./logs/sensor-3:/app/logs
+    depends_on:
+      - primary
+    restart: always
+
+  sensor-4:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_4
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=04
+      - START_ACTIVE=true
+    volumes:
+      - ./logs/sensor-4:/app/logs
+    depends_on:
+      - primary
+    restart: always
+
+  sensor-5:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_5
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=05
+      - START_ACTIVE=false
+    volumes:
+      - ./logs/sensor-5:/app/logs
+    depends_on:
+      - primary
+    restart: always
+
+  sensor-6:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_6
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=06
+      - START_ACTIVE=false
+    volumes:
+      - ./logs/sensor-6:/app/logs
+    depends_on:
+      - primary
+    restart: always
+
+  sensor-7:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_7
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=07
+      - START_ACTIVE=false
+    volumes:
+      - ./logs/sensor-7:/app/logs
+    depends_on:
+      - primary
+    restart: always
+
+  sensor-8:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_8
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=08
+      - START_ACTIVE=false
+    volumes:
+      - ./logs/sensor-8:/app/logs
+    depends_on:
+      - primary
+    restart: always
+
+  sensor-9:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_9
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=09
+      - START_ACTIVE=true
+    volumes:
+      - ./logs/sensor-9:/app/logs
+    depends_on:
+      - primary
+    restart: always
+
+  sensor-10:
+    build:
+      context: .
+      dockerfile: Sensor.Dockerfile
+    container_name: drus_sensor_10
+    environment:
+      - SERVER_HOST=primary
+      - SENSOR_ID=10
+      - START_ACTIVE=true
+    volumes:
+      - ./logs/sensor-10:/app/logs
     depends_on:
       - primary
     restart: always

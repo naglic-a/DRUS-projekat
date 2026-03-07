@@ -5,10 +5,14 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 using Serilog;
+using System.Collections.Concurrent;
+using System.Reflection.Metadata.Ecma335;
 
 namespace ServerApp;
 
 class Program {
+
+    private static readonly ClusterManager m_clusterManager = new();
     static async Task Main(string[] args) {
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()
@@ -18,6 +22,7 @@ class Program {
                 rollingInterval: RollingInterval.Day,
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
+        m_clusterManager.StartWatchdog();
 
         try {
             int port = 8080;
@@ -75,10 +80,25 @@ class Program {
                 while((encryptedLine = await reader.ReadLineAsync()) != null) {
                     try {
                         string decryptedJson = AesEncryptionHelper.Decrypt(encryptedLine, serverSharedSecret);
-
                         var reading = JsonSerializer.Deserialize<SensorReadingDto>(decryptedJson);
 
                         if(reading != null) {
+                            m_clusterManager.RecordHeartbeat(reading.SensorId, reading.IsHeartbeat);
+                            string? command = m_clusterManager.GetPendingCommand(reading.SensorId);
+                            if(command != null) {
+                                await writer.WriteLineAsync(AesEncryptionHelper.Encrypt(command, serverSharedSecret));
+                            }
+
+                            if(m_clusterManager.IsZombie(reading.SensorId, reading.IsHeartbeat)) {
+                                Log.Information("Zombie sensor {SensorId} woke up! Forcing standby on it");
+                                await writer.WriteLineAsync(AesEncryptionHelper.Encrypt("BECOME_STANDBY", serverSharedSecret));
+                                continue;
+                            }
+
+                            if(reading.IsHeartbeat) { // dont want heartbeat logged to db
+                                continue;
+                            }
+
                             Log.Information("Received reading from {SensorId}: Temperature {Value}°C", reading.SensorId, reading.Value);
                             string sql = @"
                             INSERT INTO drus_log (var_id, var_value, log_timestamp)
